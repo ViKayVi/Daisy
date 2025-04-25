@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+body {
+  cursor: none;
+}
+
+.svg-plus {
+  opacity: 0.7;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.svg-plus:hover {
+  opacity: 1;
+}
