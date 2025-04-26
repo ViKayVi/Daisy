@@ -2,10 +2,11 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
 import AnimatedGradientBackground from "./Components/HomeBackground";
-import "./App.css";
 import { CustomCursor } from "./Components/CustomCursor";
+import "./App.css";
 
 function App() {
+  const navigate = useNavigate();
   const [showSplash, setShowSplash] = useState(true);
   const [startAnimation, setAnimationStart] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -15,8 +16,13 @@ function App() {
   const svgRhombusRef = useRef<SVGSVGElement | null>(null);
   const petalsContainerRef = useRef<HTMLDivElement>(null);
   const petalsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const mainContentRef = useRef<HTMLDivElement>(null);
   const rotationAnimation = useRef<gsap.core.Tween | null>(null);
-  const navigate = useNavigate();
+
+  const [petalsData, setPetalsData] = useState<any[]>([]);
+  const [baseURL, setBaseUrl] = useState(
+    `http://localhost:${import.meta.env.VITE_BACKEND_PORT || "8080"}`
+  );
 
   const gradientColors = useMemo(
     () => ["#ADD8E6", "#87CEEB", "#6495ED", "#4682B4"],
@@ -87,7 +93,8 @@ function App() {
 
       petalsRef.current.forEach((petal, index) => {
         if (petal) {
-          const angle = (index * 60 * Math.PI) / 180;
+          const angle =
+            (index * (360 / (petalsData.length || 6)) * Math.PI) / 180;
           const finalX = centerX + radius * Math.cos(angle);
           const finalY = centerX + radius * Math.sin(angle);
 
@@ -143,58 +150,62 @@ function App() {
         }
       });
 
-      // Animación del gradiente del círculo (similar a AnimatedGradientBackground)
       gsap.to(circleRef.current, {
-        backgroundPosition: "100% 0", // O '0 100%' para vertical, etc.
-        duration: 10, // Usa la misma duración que tu AnimatedGradientBackground
+        backgroundPosition: "100% 0",
+        duration: 10,
         repeat: -1,
         ease: "linear",
         yoyo: true,
       });
     }
-  }, [startAnimation, gradientColorsAmarillo]);
+  }, [startAnimation, gradientColorsAmarillo, petalsData]);
 
-  const startTransitionAndNavigate = () => {
-    gsap.to(circleRef.current, {
-      scale: 500,
-      duration: 0.7,
-      backgroundColor: "black",
-      borderRadius: 0,
-      ease: "power2.inOut",
-      onComplete: () => {
-        navigate("/list");
-      },
-    });
+  const handleGoToList = () => {
+    const circle = circleRef.current;
+    const mainContent = mainContentRef.current;
+    if (circle) {
+      gsap.to(circle, {
+        scale: 50,
+        duration: 2,
+        borderRadius: 0,
+        zIndex: 10,
+        backgroundSize: "100% 100%",
+        backgroundPosition: "center center",
+        onComplete: () => {
+          gsap.set(mainContent, { opacity: 0, display: "none" });
+          navigate("/list");
+        },
+      });
+    }
   };
 
-  if (showSplash) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div
-          ref={circleRef}
-          className="w-[50px] h-[50px] rounded-full bg-black"
-          style={{
-            background: `linear-gradient(45deg, ${gradientColorsAmarillo.join(", ")})`,
-            backgroundSize: `200% 200%`,
-          }}
-        />
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchPetals = async () => {
+      try {
+        const response = await fetch(`${baseURL}/api/petals`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setPetalsData(data);
+      } catch (error) {
+        console.error("Error fetching petals", error);
+      }
+    };
 
-  const handleRhombusClick = () => {
-    startTransitionAndNavigate();
-  };
+    fetchPetals();
+  }, [baseURL]);
 
   return (
     <div className="h-screen relative">
       <CustomCursor isLoading={isLoading} />
       <AnimatedGradientBackground colors={gradientColors} duration={10} />
       <div
-        className="flex flex-col items-center justify-between h-screen py-12 absolute top-0 left-0 w-full"
+        ref={mainContentRef}
+        className="flex flex-col items-center justify-between h-screen py-6 absolute top-0 left-0 w-full"
         style={{ zIndex: 5, opacity: 1 }}
       >
-        <h1 ref={h1Ref} className="">
+        <h1 ref={h1Ref} className="" style={{ opacity: showSplash ? 0 : 1 }}>
           DAISY
         </h1>
         <div className="relative w-[100px] h-[100px] flex items-center justify-center">
@@ -206,15 +217,15 @@ function App() {
               backgroundSize: `200% 200%`,
             }}
           />
-          <div ref={petalsContainerRef}>
-            {Array.from({ length: 6 }).map((_, i) => {
-              const angle = i * 60;
+          <div ref={petalsContainerRef} style={{ opacity: showSplash ? 0 : 1 }}>
+            {petalsData.map((petal, i) => {
+              const angle = i * (360 / (petalsData.length || 6));
               return (
                 <div
-                  key={i}
+                  key={petal.id}
                   className="absolute w-[30px] h-[30px] flex items-center justify-center"
                   style={{
-                    transform: `rotate(${angle}deg) translateX(50px)`,
+                    transform: `rotate(${angle}deg)`,
                     transformOrigin: "0 50%",
                   }}
                   ref={(el) => {
@@ -224,17 +235,25 @@ function App() {
                   }}
                 >
                   <span
-                    style={{ transform: `rotate(11deg)` }}
-                    className="text-2xl opacity-50 hover:opacity-100 transition-opacity duration-300 border-1 py-1 px-5 rounded-full"
+                    style={{
+                      transform: `rotate(11deg) translateX(45px)`,
+                      whiteSpace: "nowrap",
+                      fontSize: "1rem",
+                    }}
+                    className="opacity-50 hover:opacity-100 transition-opacity duration-300 border-1 py-1 px-5 rounded-full petals-span"
                   >
-                    Hello
+                    {petal.text || "Empty slot"}
                   </span>
                 </div>
               );
             })}
           </div>
         </div>
-        <div className="flex gap-2" ref={svgPlusRef}>
+        <div
+          className="flex gap-2"
+          ref={svgPlusRef}
+          style={{ opacity: showSplash ? 0 : 1 }}
+        >
           <div>
             <svg
               width="36"
@@ -259,9 +278,9 @@ function App() {
               height="36"
               viewBox="0 0 36 36"
               xmlns="http://www.w3.org/2000/svg"
-              className="border-1 p-2 rounded-full svg-plus cursor-pointer"
+              className="border-1 p-2 rounded-full svg-plus"
               ref={svgRhombusRef}
-              onClick={handleRhombusClick}
+              onClick={handleGoToList}
             >
               <circle
                 cx="18"

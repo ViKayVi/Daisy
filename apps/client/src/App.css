@@ -12,3 +12,21 @@ body {
 .svg-plus:hover {
   opacity: 1;
 }
+
+.petals-span {
+  white-space: nowrap;
+  font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+  .petals-span {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .petals-span {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+}

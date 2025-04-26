@@ -7,6 +7,7 @@ interface AnimatedGradientBackgroundProps {
   duration?: number;
   fadeDuration?: number;
   children?: React.ReactNode;
+  className?: string;
 }
 
 const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({
@@ -14,6 +15,7 @@ const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({
   duration = 10,
   fadeDuration = 5,
   children,
+  className,
 }) => {
   const backgroundRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +39,7 @@ const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({
   return (
     <div
       ref={backgroundRef}
-      className="animated-gradient-background-component"
+      className={`animated-gradient-background-component ${className}`}
       style={{
         width: "100vw",
         height: "100vh",
