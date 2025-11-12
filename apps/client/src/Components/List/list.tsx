@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { MouseEvent, KeyboardEvent } from "react";
 import AnimatedGradientBackground from "../HomeBackground";
 import { CustomCursor } from "../CustomCursor";
 import gsap from "gsap";
+import { Button } from "../components/ui/button";
+import { ArrowLeftIcon, Check, Ellipsis, Trash } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ListItem {
   id: number;
@@ -12,12 +15,20 @@ interface ListItem {
 interface ListProps {
   isLoading?: boolean;
 }
+
+type InputOrButtonEvent =
+  | MouseEvent<HTMLButtonElement>
+  | KeyboardEvent<HTMLInputElement>;
+
 export const List: React.FC<ListProps> = ({ isLoading: propIsLoading }) => {
+  const navigate = useNavigate();
   const circleRef = useRef<HTMLDivElement>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
-  // No necesitamos una referencia única para el botón si solo vamos a animar su aparición junto con el texto.
   const [isLoading, setIsLoading] = useState<boolean>(propIsLoading || true);
   const [listData, setListData] = useState<ListItem[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState<string>("");
+
   const [baseURL] = useState(
     `http://localhost:${import.meta.env.VITE_BACKEND_PORT || "8080"}`
   );
@@ -50,9 +61,70 @@ export const List: React.FC<ListProps> = ({ isLoading: propIsLoading }) => {
     fetchListData();
   }, [baseURL]);
 
+  const handleEdit = (id: number, currentText: string) => {
+    setEditingId(id);
+    setEditText(currentText);
+  };
+
+  const handleSaveEdit = async (e: InputOrButtonEvent, id: number) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`${baseURL}/api/petals/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: editText }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error actualizando el pétalo");
+      }
+
+      setListData((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, text: editText } : item
+        )
+      );
+      setEditingId(null);
+    } catch (error) {
+      console.error("Error actualizando pétalo:", error);
+    }
+  };
+
+  const handleDelete = async (id: number, index: number) => {
+    try {
+      const response = await fetch(`${baseURL}/api/petals/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al borrar el pétalo");
+      }
+
+      const petalElement = listContainerRef.current?.children[index];
+
+      if (petalElement) {
+        gsap.to(petalElement, {
+          y: -50,
+          opacity: 0,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => {
+            setListData((prev) => prev.filter((item) => item.id !== id));
+          },
+        });
+      }
+
+      setListData((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error("Error borrando pétalo:", error);
+    }
+  };
+
   useEffect(() => {
     const circle = circleRef.current;
-    const listContainer = listContainerRef.current;
 
     if (circle) {
       gsap.fromTo(
@@ -60,7 +132,7 @@ export const List: React.FC<ListProps> = ({ isLoading: propIsLoading }) => {
         {
           scale: 50,
           duration: 1,
-          borderRadius: 0,
+          borderRadius: "50%",
           zIndex: 10,
           backgroundSize: "100% 100%",
           backgroundPosition: "center center",
@@ -76,47 +148,31 @@ export const List: React.FC<ListProps> = ({ isLoading: propIsLoading }) => {
           ease: "power2.out",
           backgroundSize: "100% 100%",
           backgroundPosition: "0% 0%",
-          onComplete: () => {
-            if (
-              listContainer &&
-              listContainer.children &&
-              listData.length > 0
-            ) {
-              gsap.fromTo(
-                listContainer.children,
-                {
-                  opacity: 0,
-                  y: 20,
-                },
-                {
-                  opacity: 1,
-                  y: 0,
-                  stagger: 0.1,
-                  duration: 0.6,
-                  ease: "power2.out",
-                }
-              );
-            }
-          },
-        }
-      );
-    } else if (listContainer && listContainer.children) {
-      gsap.fromTo(
-        listContainer.children,
-        {
-          opacity: 0,
-          y: 20,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          stagger: 0.1,
-          duration: 0.6,
-          ease: "power2.out",
         }
       );
     }
-  }, [listData]);
+  }, []);
+
+  const handleGoBack = () => {
+    if (circleRef.current) {
+      circleRef.current.style.zIndex = "50";
+
+      gsap.to(circleRef.current, {
+        scale: 50,
+        top: 0,
+        left: "50%",
+        xPercent: -50,
+        yPercent: 0,
+        duration: 1.2,
+        ease: "power2.inOut",
+        onComplete: () => {
+          navigate("/");
+        },
+      });
+    } else {
+      navigate("/");
+    }
+  };
 
   return (
     <div className="h-screen w-full relative  overflow-hidden">
@@ -136,48 +192,55 @@ export const List: React.FC<ListProps> = ({ isLoading: propIsLoading }) => {
       ></div>
       <div
         ref={listContainerRef}
-        className="list-container mt-60 px-5 sm:px-10 md:px-20 lg:px-100 relative z-10 flex flex-col gap-4" // Cambiamos a flex-col para apilar los elementos
+        className="list-container mt-60 px-5 sm:px-10 md:px-20 lg:px-100 relative flex flex-col gap-4"
       >
-        {listData.map((item) => (
+        {listData.map((item, index) => (
           <div
             key={item.id}
-            className="opacity-0 hover:opacity-100 text-2xl transition-opacity duration-300  flex justify-between items-center" // Añadimos flex para alinear texto y botón
+            className="text-2xl transition-opacity duration-300 flex justify-between items-center gap-4"
           >
-            <div className="border-1 py-1 px-5 rounded-full petals-span">
-              {item.text}
+            {editingId === item.id ? (
+              <input
+                className="border-1 py-1 px-5 rounded-full petals-span text-black"
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveEdit(e, item.id);
+                }}
+              />
+            ) : (
+              <div className="border-1 py-1 px-5 border-gray-700 rounded-full petals-span">
+                {item.text}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {editingId === item.id ? (
+                <Button
+                  type="button"
+                  onClick={(e) => handleSaveEdit(e, item.id)}
+                  icon={<Check />}
+                ></Button>
+              ) : (
+                <Button
+                  icon={<Ellipsis />}
+                  onClick={() => handleEdit(item.id, item.text)}
+                />
+              )}
+              <Button
+                icon={<Trash />}
+                onClick={() => handleDelete(item.id, index)}
+              />
             </div>
-            <svg
-              width="24" // Reducimos el tamaño del botón para que quepa mejor junto al texto
-              height="24"
-              viewBox="0 0 36 36"
-              xmlns="http://www.w3.org/2000/svg"
-              className="border-1 p-1 rounded-full svg-plus ml-4" // Añadimos margen izquierdo para separarlo del texto
-            >
-              <circle
-                cx="18"
-                cy="18"
-                r="10" // Reducimos el radio del círculo
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-              <path
-                d="M18 7L29 18L18 29L7 18L18 7Z"
-                fill="currentColor"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
           </div>
         ))}
       </div>
-      <Link
-        to="/"
-        className="mt-8 text-lg text-white relative hover:underline z-10 "
-      >
-        Volver a Home
-      </Link>
+
+      <Button
+        onClick={handleGoBack}
+        className="mt-8 text-lg flex absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white hover:underline z-10"
+        icon={<ArrowLeftIcon />}
+      ></Button>
     </div>
   );
 };

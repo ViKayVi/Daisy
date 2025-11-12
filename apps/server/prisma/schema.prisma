@@ -23,7 +23,7 @@ model User {
 
 model Petal {
   id              String   @id @default(uuid())
-  user_id         String
+  user_id         String?
   created_at      DateTime @default(now())
   day_of_week     String
   time_of_day     String
@@ -34,7 +34,7 @@ model Petal {
   color_palette   String?
   info            String?
   text            String?
-  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user            User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
 }
