@@ -8,6 +8,14 @@ interface PetalData {
   text: string
 }
 
+interface PetalData {
+  dayOfWeek: string
+  timeOfDay: string
+  currentEmotion: string
+  desiredEmotion: string
+  text: string
+}
+
 export const petalModel = {
   async getAllPetals() {
     try {
@@ -17,7 +25,11 @@ export const petalModel = {
       throw error
     }
   },
+<<<<<<< HEAD
   async createNewPetal(data: PetalData) {
+=======
+  async createNewPetal(data: PetalData): Promise<Petal> {
+>>>>>>> a7b1998 (feat(client): enhance client app with new components and dependencies)
     try {
       const petal = await prisma.petal.create({
         data: {
