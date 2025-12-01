@@ -1,6 +1,4 @@
-import { PrismaClient, Petal } from 'generated/prisma'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 interface PetalData {
   dayOfWeek: string
@@ -11,7 +9,7 @@ interface PetalData {
 }
 
 export const petalModel = {
-  async getAllPetals(): Promise<Petal[]> {
+  async getAllPetals() {
     try {
       return await prisma.petal.findMany()
     } catch (error) {
@@ -19,7 +17,7 @@ export const petalModel = {
       throw error
     }
   },
-  async createNewPetal(data: PetalData): Promise<Petal> {
+  async createNewPetal(data: PetalData) {
     try {
       const petal = await prisma.petal.create({
         data: {
