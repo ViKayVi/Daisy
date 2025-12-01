@@ -1,5 +1,6 @@
-import { Petal } from 'generated/prisma'
-import { prisma } from '../lib/prisma'
+import { PrismaClient, Petal } from 'generated/prisma'
+
+const prisma = new PrismaClient()
 
 interface PetalData {
   dayOfWeek: string
