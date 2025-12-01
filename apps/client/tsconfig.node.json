@@ -2,7 +2,7 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "ES2022",
-    "lib": ["ES2023", "DOM", "DOM.Iterable", "ESNext"], // Añade DOM y DOM.Iterable si estás en un entorno de navegador
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -20,6 +20,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"], // Asegúrate de que la ruta a tu directorio de código fuente sea correcta
-  "exclude": ["node_modules"] // Opcional: excluye node_modules para un mejor rendimiento
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }
