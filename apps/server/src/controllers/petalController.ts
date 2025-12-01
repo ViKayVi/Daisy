@@ -26,7 +26,7 @@ const petalController = {
         !desiredEmotion ||
         !text
       ) {
-        return res.status(400).json({ error: 'All fields are required' })
+        res.status(400).json({ error: 'All fields are required' })
       }
 
       const petalData = {
@@ -50,7 +50,7 @@ const petalController = {
       const petal: Petal | null = await petalModel.getPetalById(id)
 
       if (!petal) {
-        return res.status(404).json({ error: 'Petal not found' })
+        res.status(404).json({ error: 'Petal not found' })
       }
 
       res.json(petal)
@@ -80,7 +80,7 @@ const petalController = {
     const { text } = req.body
 
     if (!text) {
-      return res.status(400).json({ error: 'Text is required' })
+      res.status(400).json({ error: 'Text is required' })
     }
 
     try {
